@@ -1,0 +1,25 @@
+version: '3.7'
+
+services:
+  planner:
+    build: ./planner
+    container_name: planner
+    ports:
+      - 8080:8080
+    depends_on:
+      - mqtt_broker
+    networks:
+      - warehouse
+  mqtt_broker:
+    image: eclipse-mosquitto:2.0.10
+    container_name: mqtt_broker
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: always
+    ports:
+      - 1883:1883
+    networks:
+      - warehouse
+
+networks:
+  warehouse:

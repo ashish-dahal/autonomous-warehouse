@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Autonomous Warehouse Dashboard</title>
+    <style>
+    </style>
+</head>
+
+<body>
+    <div id="grid"></div>
+    <script>
+        // Create a class to represent a grid
+        class Grid {
+            constructor(n, m) {
+                // Initialize a 2D array to store the grid cells
+                this.grid = new Array(n).fill(0).map(() => new Array(m).fill(0));
+            }
+
+            // Method to add an obstacle at a given cell
+            addObstacle(x, y) {
+                // Update the grid to show an obstacle at the given cell
+                this.grid[x][y] = 1;
+            }
+
+            // Method to remove an obstacle at a given cell
+            removeObstacle(x, y) {
+                // Update the grid to show no obstacle at the given cell
+                this.grid[x][y] = 0;
+            }
+        }
+
+        function handleMouseEvent(event) {
+            const x = event.target.dataset.x;
+            const y = event.target.dataset.y;
+
+            event.target.classList.toggle("animate");
+
+            // Check if the clicked cell already has an obstacle
+            if (grid.grid[x][y] === 1) {
+                // If it does, remove the obstacle
+                grid.removeObstacle(x, y);
+                event.target.classList.remove("obstacle");
+            } else {
+                // If it doesn't, add an obstacle
+                grid.addObstacle(x, y);
+                event.target.classList.add("obstacle");
+            }
+        }
+
+        function handleMouseDown(event) {
+            handleMouseEvent(event);
+        }
+
+        function handleMouseEnter(event) {
+            if (event.buttons === 1) {
+                handleMouseEvent(event);
+            }
+        }
+
+
+        // Create a new Grid object
+        const grid = new Grid(23, 37);
+
+        // Get the grid container element
+        const gridContainer = document.getElementById("grid");
+
+        // Set the grid container's dimensions
+        gridContainer.style.gridTemplateColumns = `repeat(${grid.grid[0].length}, 40px)`;
+        gridContainer.style.gridTemplateRows = `repeat(${grid.grid.length}, 40px)`;
+
+        // Create the grid cells and add them to the container
+        for (let i = 0; i < grid.grid.length; i++) {
+            for (let j = 0; j < grid.grid[i].length; j++) {
+                // Create a new div element to represent a grid cell
+                const cell = document.createElement("div");
+
+                // Set the x and y coordinates of the cell as data attributes
+                cell.dataset.x = i;
+                cell.dataset.y = j;
+
+                // Add the "grid-cell" class to the cell
+                cell.classList.add("grid-cell");
+
+                // Add event listeners for click and drag events
+                cell.addEventListener("mousedown", handleMouseDown);
+                cell.addEventListener("mouseenter", handleMouseEnter)
+
+                // Add the cell to the grid container
+                gridContainer.appendChild(cell);
+            }
+        }
+
+
+    </script>
+    <style>
+        body {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+        }
+
+        #grid {
+            display: grid;
+            align-self: center;
+            justify-self: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.619);
+            border-right: 1px solid rgba(0, 0, 0, 0.619);
+        }
+
+        .grid-cell {
+            background-color: white;
+            border-left: 1px solid rgba(0, 0, 0, 0.619);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.619);
+            transition: all .2s ease-in-out;
+        }
+
+        .animate {
+            animation: center-animate 0.2s ease-in-out;
+        }
+
+        @keyframes center-animate {
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .obstacle {
+            background-color: rgba(0, 0, 0, 0.619);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</body>
+
+</html>
