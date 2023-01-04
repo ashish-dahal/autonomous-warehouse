@@ -49,6 +49,42 @@
             }
         }
 
+        class Robot {
+            constructor(nextCell, state) {
+                this.nextCell = nextCell;
+                this.state = state;
+            }
+
+            move() {
+                // Move the robot to the next cell
+            }
+
+            updateState(newState) {
+                this.state = newState;
+            }
+
+            takeAction() {
+                switch (this.state) {
+                    case "idle":
+                        // Do nothing
+                        break;
+                    case "moving":
+                        this.move();
+                        break;
+                    case "loading":
+                        // Start loading an item
+                        break;
+                    case "unloading":
+                        // Start unloading an item
+                        break;
+                    default:
+                        // Do nothing
+                        break;
+                }
+            }
+        }
+
+
         function handleMouseDown(event) {
             handleMouseEvent(event);
         }
