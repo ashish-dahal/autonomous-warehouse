@@ -3,6 +3,8 @@ from math import sqrt
 import paho.mqtt.client as mqtt
 import time
 import random
+import requests
+import json
 
 
 class Planner:
@@ -14,7 +16,7 @@ class Planner:
         self.client = mqtt.Client()
 
         # Connect to the mqtt broker
-        # self. client.connect(broker_name, broker_port)
+        self. client.connect(broker_name, broker_port)
 
     def a_star(self, map, source, destination):
         """ A* algorithm to find the shortest path from the source to the destination.
@@ -107,8 +109,21 @@ class Planner:
         else:
             return None
 
-    # The callback for when the client receives a CONNACK response from the server.
+    def get_path(self, map, robot_position, source, destination):
+        """Returns the path.
 
+        Returns:
+            list: The path.
+        """
+        robot_to_source = self.a_star(map, robot_position, source)
+        source_to_destination = self.a_star(map, source, destination)
+
+        if robot_to_source is not None and source_to_destination is not None:
+            return robot_to_source + source_to_destination[1:]
+        else:
+            return None
+
+    # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
         client.subscribe("analyzer/command")
@@ -116,6 +131,61 @@ class Planner:
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, msg):
         print(msg.topic+": \n"+str(msg.payload))
+        if msg.topic == "analyzer/command":
+            if msg.payload == b"start":
+                # get info from knowledge
+                map, robot_position, source, destination = self.query_knowledge()
+
+                # get path
+                path = self.get_path(map, robot_position, source, destination)
+
+                print("Update map with path (Indicated by '2'):")
+                if path is not None:
+                    # print the line on path in map
+                    for p in path:
+                        map[p[0]][p[1]] = 2
+
+                    for m in map:
+                        print(m)
+
+                    print("path: ", path)
+                else:
+                    print("Path doesn't exist")
+
+                # insert path to knowledge in json format
+                self.insert_knowledge(json.dumps(path))
+
+                # publish trigger to executor
+                self.client.publish("planner/command", "start")
+
+    def query_knowledge(self):
+        # get map from rest api
+        map = requests.get("knowledge/map").json()
+
+        # get package info from rest api
+        package_info = json.loads(requests.get(
+            "knowledge/package_info").json())
+
+        # get robot info from rest api
+        robot_info = json.loads(requests.get("knowledge/robot_info").json())
+
+        source = package_info['source']
+        destination = package_info['destination']
+        robot_position = robot_info['position']
+
+        print("\nMap:")
+        for m in map:
+            print(m)
+
+        print("Robot:", robot_position)
+        print("Source: ", source)
+        print("Destination: ", destination)
+        print("-"*10)
+        return map, robot_position, source, destination
+
+    def insert_knowledge(self, path):
+        # insert path to rest api
+        requests.post("knowledge/path", json=path)
 
     def start(self):
         """Starts the planner.
@@ -126,37 +196,10 @@ class Planner:
         # The callback for when a PUBLISH message is received from the server.
         self.client.on_message = self.on_message
 
+        self.client.loop_forever()
+
 
 if __name__ == "__main__":
-    # generate random 10*10 map
-    map = [[random.randint(0, 1) for _ in range(20)] for _ in range(20)]
-    # generate random source and destinatiion based on the map
-    source = (random.randint(0, 19), random.randint(0, 19))
-    destination = (random.randint(0, 19), random.randint(0, 19))
 
-    map[source[0]][source[1]] = 0
-    map[destination[0]][destination[1]] = 0
-
-    print("\nMap:")
-    for m in map:
-        print(m)
-
-    print("Source: ", source)
-    print("Destination: ", destination)
-    print("-"*10)
-
-    planner = Planner("mqtt_broker", 1883)
-    path = planner.a_star(map, source, destination)
-
-    print("Update map with path (Indicated by '2'):")
-    if path is not None:
-        # print the line on path in map
-        for p in path:
-            map[p[0]][p[1]] = 2
-
-        for m in map:
-            print(m)
-
-        print("path: ", path)
-    else:
-        print("Path doesn't exist")
+    planner = Planner("localhost", 1883)
+    planner.start()
