@@ -6,18 +6,43 @@ import random
 
 
 class Planner:
-    def __init__(self):
+    def __init__(self, broker_name, broker_port):
         self.map = []
         self.source = ()
         self.destination = ()
         self.path = []  # The path will be stored here
         self.client = mqtt.Client()
 
-    def __a_star(self, map, source, destination):
+        # Connect to the mqtt broker
+        # self. client.connect(broker_name, broker_port)
+
+    def a_star(self, map, source, destination):
+        """ A* algorithm to find the shortest path from the source to the destination.
+
+        Args:
+            map (list): The map of the environment.
+            source (tuple): The source node.
+            destination (tuple): The destination node.
+
+        Returns:
+            list: The shortest path (if exists) from the source to the destination.
+            None: If there is no path from the source to the destination.
+
+        Raises:
+            ValueError: If the source or destination is an obstacle.
+        """
+
+        # Check if the source or destination is an obstacle
+        if map[source[0]][source[1]] == 1:
+            raise ValueError("Source is an obstacle")
+        if map[destination[0]][destination[1]] == 1:
+            raise ValueError("Destination is an obstacle")
+
+        # Store the map, source, and destination
         self.map = map
         self.source = source
         self.destination = destination
-        """ A* algorithm to find the shortest path from the source to the destination."""
+
         # Set up the initial map
         rows = len(self.map)  # Number of rows
         cols = len(self.map[0])  # Number of columns
@@ -68,39 +93,70 @@ class Planner:
                         # Push the node onto the priority queue
                         heappush(heap, (priority, (next_r, next_c)))
 
-        # Return the shortest path
-        path = []
-        coord = self.destination  # Start at the destination
-        while coord is not None:
-            path.append(coord)  # Add the current node to the path
-            coord = previous[coord[0]][coord[1]]  # Move to the previous node
-        self.path = path[::-1]  # Reverse the path
-        return self.path
+        # Return the shortest path if it exists, otherwise print "no path"
+        if previous[self.destination[0]][self.destination[1]] is not None:
+            path = []
+            coord = self.destination  # Start at the destination
+            # Loop until we reach the source
+            while coord is not None:
+                path.append(coord)  # Add the current node to the path
+                # Move to the previous node
+                coord = previous[coord[0]][coord[1]]
+            self.path = path[::-1]  # Reverse the path
+            return self.path  # Return the path
+        else:
+            return None
 
-    def get_path(self, map, source, destination):
-        return self.__a_star(map, source, destination)
+    # The callback for when the client receives a CONNACK response from the server.
 
-    def publish(self, message):
-        client = self.client
-        client.on_connect = lambda client, userdata, flags, rc: print(
-            "Connected with result code "+str(rc))
-        client.on_message = lambda client, userdata, message: print(
-            message.topic+" "+str(message.payload))
+    def on_connect(self, client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))
+        client.subscribe("analyzer/command")
 
-        client.connect("mqtt_broker", 1833, 60)
-        client.publish("path", message)
-        print("published")
+    # The callback for when a PUBLISH message is received from the server.
+    def on_message(self, client, userdata, msg):
+        print(msg.topic+": \n"+str(msg.payload))
+
+    def start(self):
+        """Starts the planner.
+        """
+        # The callback for when a PUBLISH message is received from the server.
+        self.client.on_connect = self.on_connect
+
+        # The callback for when a PUBLISH message is received from the server.
+        self.client.on_message = self.on_message
 
 
 if __name__ == "__main__":
     # generate random 10*10 map
-    map = [[random.randint(0, 1) for _ in range(10)] for _ in range(10)]
-    # generate random source based on the map
-    source = (random.randint(0, 9), random.randint(0, 9))
-    destination = (random.randint(0, 9), random.randint(0, 9))
-    planner = Planner()
-    path = planner.get_path(map, source, destination)
-    while True:
-        print(path)
-        planner.publish(str(path))
-        time.sleep(0.5)
+    map = [[random.randint(0, 1) for _ in range(20)] for _ in range(20)]
+    # generate random source and destinatiion based on the map
+    source = (random.randint(0, 19), random.randint(0, 19))
+    destination = (random.randint(0, 19), random.randint(0, 19))
+
+    map[source[0]][source[1]] = 0
+    map[destination[0]][destination[1]] = 0
+
+    print("\nMap:")
+    for m in map:
+        print(m)
+
+    print("Source: ", source)
+    print("Destination: ", destination)
+    print("-"*10)
+
+    planner = Planner("mqtt_broker", 1883)
+    path = planner.a_star(map, source, destination)
+
+    print("Update map with path (Indicated by '2'):")
+    if path is not None:
+        # print the line on path in map
+        for p in path:
+            map[p[0]][p[1]] = 2
+
+        for m in map:
+            print(m)
+
+        print("path: ", path)
+    else:
+        print("Path doesn't exist")

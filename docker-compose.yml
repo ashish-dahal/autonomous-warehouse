@@ -18,9 +18,9 @@ services:
     restart: always
     ports:
       - 1883:1883
+      - 8000:8000
     networks:
       - warehouse
-
 
 networks:
   warehouse:
