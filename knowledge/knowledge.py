@@ -28,7 +28,7 @@ def package_info():
     if request.method == 'POST': #insert package_info document
         package_info = request.get_json()
         collection_package.insert_one({"id_package" : package_info['id_package'], "source":  package_info['source'], "destination": package_info['destination'], "priority": package_info['priority']}).inserted_id
-    else: #fetch last package_info document
+    else: #fetch first package_info document (FIFO)
         first_package_document = json.loads(collection_package.find().sort({_id:1}).limit(1))
         collection_package.remove(first_package_element)
         return json.dumps(last_package_document)
