@@ -1,34 +1,55 @@
-from typing import List, Tuple
-
+import paho.mqtt.client as mqtt
+import requests
 
 class Analyzer:
-    def __init__(self, map: List[List[int]], knowledge):
+    def __init__(self, map, package_info, robot_info ):
         self.map = map
-        self.knowledge = knowledge
 
-    def detect_obstacles(self):
-        """ Detects new obstacles in the map. """
-        # Iterate over the map and check for obstacles
-        for i in range(len(self.map)):
-            for j in range(len(self.map[0])):
-                if self.map[i][j] == 1:
-                    # Check if this obstacle was already known
-                    if (i, j) not in self.knowledge.obstacles:
-                        # If not, add it to the list of known obstacles
-                        self.knowledge.obstacles.append((i, j))
-                        # Update the knowledge database with the new obstacle
-                        self.knowledge.update_database((i, j), "obstacle")
 
-    def assign_package(self, package: Tuple[Tuple[int, int], Tuple[int, int], int]):
-        """ Assigns a package to a robot based on its priority. """
-        # Sort the list of available packages by priority
-        sorted_packages = sorted(self.knowledge.packages, key=lambda x: x[2], reverse=True)
-        # Assign the package with the highest priority to a robot
-        self.knowledge.assign_package(sorted_packages[0][0])
+    '''
+    Function that gets data via Rest API from Knowledge component
+    '''
+    def get_info(self):
+        # saving map to check if it was change (for example, if user added the obstacle to the map)
+        map_temp = map
+        # getting the map
+        endpoint_map = "/map_info"
+        # Send the GET request
+        self.map = requests.get(endpoint_map)
 
-    def get_highest_priority_package(self):
-        """ Returns the ID of the package with the highest priority. """
-        # Sort the list of available packages by priority
-        sorted_packages = sorted(self.knowledge.packages, key=lambda x: x[2], reverse=True)
-        # Return the ID of the package with the highest priority
-        return sorted_packages[0][0]
+        '''
+        Function that checks if the map was changed, for example if the user added new obstacle to the map.
+        This code compares the two maps element by element and check if any of the elements are different, 
+        if it finds any difference it returns True otherwise False.
+        '''
+        def check_map(self):
+            has_changes = any(val1 != val2 for row1, row2 in zip(map_temp, self.map) for val1, val2 in zip(row1, row2))
+            return has_changes
+
+
+        '''
+        Function that checks if the map was changed, for example if the user added new obstacle to the map
+        '''
+        def check_map(self):
+            has_changes = any(val1 != val2 for row1, row2 in zip(map_temp, map) for val1, val2 in zip(row1, row2))
+            return has_changes
+
+ def on_connect(client, userdata, flags, rc):
+        print("Connected with result code " + str(rc))
+
+
+
+changed = Analyzer.check_map()
+
+if changed:
+    client = mqtt.Client()
+    # Connect to the MQTT broker
+    client.connect("MQTT_broker", 1883)
+    # Publish the JSON file to the broker on a specific topic
+    client.publish("warehouse/analyzer/command", "Start")
+    client.disconnect()
+else:
+    None
+
+
+
