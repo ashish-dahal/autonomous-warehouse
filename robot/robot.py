@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import json
 
 '''
-This piece of code recieves a JSON format from MQQT broker and convert to Python dictionary
+This piece of code recieves a JSON format from MQTT broker and convert to Python dictionary
 '''
 
 #initial state of the robot - idle
@@ -70,10 +70,10 @@ client = mqtt.Client()
 client.on_message = on_message
 
 # Connect to the MQTT broker
-client.connect("MQQT_broker", 1883)
+client.connect("MQTT_broker", 1883)
 
 # Subscribe to the topic to receive JSON file
-client.subscribe("warehouse/robot/planned path")
+client.subscribe("warehouse/robot/planned_path")
 
 '''
 
