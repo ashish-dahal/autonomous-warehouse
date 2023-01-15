@@ -4,7 +4,7 @@ import paho.mqtt.client as mqtt
 
 MQTT_BROKER = "127.0.0.1" #change later
 MQTT_PORT = 1234 #change later
-MQTT_TOPIC = [("warehouse/map",0),("warehouse/robot/#/position",0), ("warehouse/package/insert",0), ("warehouse/package/delete",0)]
+MQTT_TOPIC = [("warehouse/map",0),("warehouse/robot/position",0), ("warehouse/package/insert",0)]
 
 
 def on_connect(client, userdata, flags, rc):
