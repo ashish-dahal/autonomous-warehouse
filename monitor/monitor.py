@@ -1,4 +1,5 @@
 import time
+import requests
 import json
 import paho.mqtt.client as mqtt
 
@@ -18,8 +19,13 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, message):
     data = message.payload
     receive=data.decode("utf-8")
-    m_decode = json.loads(receive)
-    print ("Message received: "  + str(m_decode))
+    msg= json.loads(receive)
+    if message.topic is "warehouse/map":
+        requests.post(url = "knowledge/map_info", data = msg)
+    elif message.topic is "warehouse/robot/position":
+        requests.post(url = "knowledge/robot_info", data = msg)
+    elif message.topic is "warehouse/package/insert":
+        requests.post(url = "knowledge/package_info", data = msg)
 
 
 Connected = False   #global variable - connection state
