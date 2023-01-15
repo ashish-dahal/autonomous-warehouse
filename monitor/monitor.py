@@ -30,7 +30,7 @@ def on_message(client, userdata, message):
 
 Connected = False   #global variable - connection state
 
-client = mqtt.Client("Python")
+client = mqtt.Client()
 client.on_connect= on_connect
 client.on_message= on_message
 client.connect(MQTT_BROKER,MQTT_PORT)
