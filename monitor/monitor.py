@@ -7,25 +7,25 @@ MQTT_BROKER = "127.0.0.1"
 MQTT_PORT = 1883 
 MQTT_TOPIC = [("warehouse/map",0),("warehouse/robot/position",0), ("warehouse/package/insert",0)]
 
+class Monitor:
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to broker")
+            global Connected
+            Connected = True
+        else:
+            print("Connection failed")
 
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("Connected to broker")
-        global Connected
-        Connected = True
-    else:
-        print("Connection failed")
-
-def on_message(client, userdata, message):
-    data = message.payload
-    receive=data.decode("utf-8")
-    msg= json.loads(receive)
-    if message.topic is "warehouse/map":
-        requests.post(url = "knowledge/map_info", data = msg)
-    elif message.topic is "warehouse/robot/position":
-        requests.post(url = "knowledge/robot_info", data = msg)
-    elif message.topic is "warehouse/package/insert":
-        requests.post(url = "knowledge/package_info", data = msg)
+    def on_message(client, userdata, message):
+        data = message.payload
+        receive=data.decode("utf-8")
+        msg= json.loads(receive)
+        if message.topic is "warehouse/map":
+            requests.post(url = "knowledge/map_info", data = msg)
+        elif message.topic is "warehouse/robot/position":
+            requests.post(url = "knowledge/robot_info", data = msg)
+        elif message.topic is "warehouse/package/insert":
+            requests.post(url = "knowledge/package_info", data = msg)
 
 
 Connected = False   #global variable - connection state
