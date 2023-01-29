@@ -13,6 +13,7 @@ class Monitor:
     def __init__(self, MQTT_BROKER, MQTT_PORT):
         self.client = mqtt.Client()
 
+    # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("Connected to broker")
