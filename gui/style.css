@@ -84,6 +84,6 @@ body {
 }
 
 .obstacle {
-    background-color: rgba(0, 0, 0, 0.619);
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    background-color: rgb(242 141 199 / 62%);
+    border: 1px solid rgba(167, 94, 135, 0.62);
 }

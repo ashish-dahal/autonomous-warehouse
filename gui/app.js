@@ -145,6 +145,9 @@ function resetGrid(grid, robot, packages) {
     for (let i = 0; i < gridCells.length; i++) {
         gridCells[i].classList.remove("obstacle");
     }
+
+    // publish reset message to the mqtt broker
+    client.publish('warehouse/reset', 'reset');
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////

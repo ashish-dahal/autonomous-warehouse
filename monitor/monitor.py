@@ -3,54 +3,74 @@ import requests
 import json
 import paho.mqtt.client as mqtt
 
-MQTT_BROKER = "127.0.0.1"
+HOST = "localhost"
+MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
-MQTT_TOPIC = [("warehouse/map", 0), ("warehouse/robot/position",
-                                     0), ("warehouse/package/insert", 0)]
+MQTT_TOPICS = [("warehouse/map", 0), ("warehouse/robot/status",
+                                      0), ("warehouse/package/insert", 0), ("warehouse/reset", 0)]
 
 
 class Monitor:
-    def __init__(self, MQTT_BROKER, MQTT_PORT):
+    def __init__(self):
         self.client = mqtt.Client()
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to broker")
+            print("Connected to broker.")
         else:
-            print("Connection failed")
+            print("Connection failed.")
 
+    # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, message):
-        data = message.payload
-        receive = data.decode("utf-8")
-        msg = json.loads(receive)
+        msg = message.payload.decode("utf-8")
         if message.topic == "warehouse/map":
             self.insert_map_info(msg)
         elif message.topic == "warehouse/robot/status":
             self.insert_robot_info(msg)
         elif message.topic == "warehouse/package/insert":
             self.insert_package_info(msg)
+        elif message.topic == "warehouse/reset":
+            if msg == "reset":
+                self.reset_knowledge()
 
-    def insert_map_info(self, map):
-        requests.post(url="knowledge/map_info", data=map)
+        self.command_analyzer()
 
-    def insert_robot_info(self, robot):
-        requests.post(url="knowledge/robot_info", data=robot)
+    # Send command to analyzer to start analyzing
+    def command_analyzer(self):
+        self.client.publish("warehouse/monitor/command", "start")
 
-    def insert_package_info(self, package):
-        requests.post(url="knowledge/package_info", data=package)
+    # Insert map info into knowledge
 
+    def insert_map_info(self, map_info):
+        requests.post(url=f"{HOST}/map_info", data=map_info)
+        print(map_info)
+
+    # Insert robot info into knowledge
+    def insert_robot_info(self, robot_info):
+        requests.post(url=f"{HOST}/robot_info", data=robot_info)
+        print(robot_info)
+
+    # Insert package info into knowledge
+    def insert_package_info(self, package_info):
+        requests.post(url=f"{HOST}/package_info", data=package_info)
+        print(package_info)
+
+    # Reset knowledge
+    def reset_knowledge(self):
+        # requests.post(url="knowledge/reset")
+        print("Reset knowledge")
+
+    # Start the monitor
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         # Connect to the mqtt broker
-        self.client.subscribe(MQTT_TOPIC)
-        monitor.client.loop_start()
+        self.client.subscribe(MQTT_TOPICS)
+        self.client.loop_forever()
 
 
 if __name__ == "__main__":
-    monitor = Monitor(MQTT_BROKER, MQTT_PORT)
+    monitor = Monitor()
     monitor.start()
-    while True:
-        time.sleep(1)
