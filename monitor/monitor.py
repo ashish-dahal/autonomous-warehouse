@@ -8,7 +8,15 @@ MQTT_PORT = 1883
 MQTT_TOPIC = [("warehouse/map",0),("warehouse/robot/position",0), ("warehouse/package/insert",0)]
 
 class Monitor:
-    def on_connect(client, userdata, flags, rc):
+    def __init__(self, MQTT_BROKER, MQTT_PORT):
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        # Connect to the mqtt broker
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
+        self.client.subscribe(MQTT_TOPIC)
+        
+    def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("Connected to broker")
             global Connected
@@ -16,36 +24,19 @@ class Monitor:
         else:
             print("Connection failed")
 
-    def on_message(client, userdata, message):
+    def on_message(self, client, userdata, message):
         data = message.payload
-        receive=data.decode("utf-8")
-        msg= json.loads(receive)
-        if message.topic is "warehouse/map":
+        receive = data.decode("utf-8")
+        msg = json.loads(receive)
+        if message.topic == "warehouse/map":
             requests.post(url = "knowledge/map_info", data = msg)
-        elif message.topic is "warehouse/robot/position":
+        elif message.topic == "warehouse/robot/position":
             requests.post(url = "knowledge/robot_info", data = msg)
-        elif message.topic is "warehouse/package/insert":
+        elif message.topic == "warehouse/package/insert":
             requests.post(url = "knowledge/package_info", data = msg)
-
-
-Connected = False   #global variable - connection state
-
-client = mqtt.Client()
-client.on_connect= on_connect
-client.on_message= on_message
-client.connect(MQTT_BROKER,MQTT_PORT)
-
-client.loop_start()
-
-while Connected != True:
-    time.sleep(0.1)
-
-client.subscribe(MQTT_TOPIC)
-
-try:
+            
+if __name__ == "__main__":
+    monitor = Monitor(MQTT_BROKER, MQTT_PORT)
+    monitor.client.loop_start()
     while True:
         time.sleep(1)
-
-except KeyboardInterrupt:
-    print("exiting")
-
