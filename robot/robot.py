@@ -1,89 +1,115 @@
 import paho.mqtt.client as mqtt
 import json
-
-'''
-This piece of code recieves a JSON format from MQTT broker and convert to Python dictionary
-'''
-
-#initial state of the robot - idle
-state="idle"
-
-# Callback function for when a message is received on the subscribed topic.
-def on_message(client, userdata, msg):
-    # Extract the JSON file from the message payload
-    json_file = json.loads(msg.payload)
-    print("Received JSON file: ", json_file)
-    # Convert the JSON file into a Python dictionary
-    data = json.loads(json_file)
-    print("Converted data: ", data)
-
-    '''
-    Dictionary format of data as follows...
-
-    data = {
-        "package_id": "value1", 
-        "planned_path": "value2"
-            }
-
-    '''
-
-    # Initialize the robot's position and state
-
-    package_id = data["package_id"]
-    planned_path = data["planned_path"]
-    current_pos = planned_path[0]
-
-    for point in planned_path[1:]:
-        state = "delivering the package..."
-        # Calculate the distance between the current position and the next point
-        x_distance = point[0] - current_pos[0]
-        y_distance = point[1] - current_pos[1]
-        # Move the robot to the next point
-
-        current_pos = point
-        print("Robot is now at position: ", current_pos)
+import time
 
 
-        data_send = {
-            "package_id": package_id,
-            "robot_state": state,
-            "position": current_pos
+class Robot:
+    def __init__(self, broker_name):
+
+        # initial state of the robot - idle
+        self.state = "IDLE"
+
+        self.position = [10, 10]
+
+        self.assigned_package = None
+
+        self.planned_path = []
+
+        self.prev_path = []
+
+        # MQTT broker name
+        self.broker_name = broker_name
+
+    # Callback function for when a message is received on the subscribed topic.
+    def on_message(self, client, userdata, msg):
+        if msg.topic == "warehouse/robot/planned_path":
+
+            print("\n", msg.topic, msg.payload)
+            # Extract the JSON file from the message payload
+            path_data = json.loads(msg.payload)
+
+            '''
+            Dictionary format of data as follows...
+
+            data = {
+                "package_id": "value1",
+                "planned_path": [(x1, y1), (x2, y2), (x3, y3), ...]
                     }
 
-        # Convert the dictionary to a JSON file
-        json_data = json.dumps(data_send)
+            '''
 
+            # Initialize the robot's position and state
+            self.assigned_package = path_data["package_id"]
+
+            # check if there is no path
+            if not path_data["planned_path"]:
+                self.state = "NO_PATH"
+                self.planned_path = []
+            else:
+                self.planned_path = path_data["planned_path"]
+
+    # function to check if path has been changed
+    def path_changed(self):
+        while True:
+            if self.prev_path != self.planned_path:
+                print("\nPath has been updated")
+                self.prev_path = self.planned_path
+                self.move()
+
+    def move(self):
+        for point in self.planned_path:
+            if self.prev_path != self.planned_path:
+                print("\nPath has been updated - while moving")
+                self.prev_path = self.planned_path
+                self.move()
+                return
+            self.state = "DELIVERED" if point == self.planned_path[-1] else "DELIVERING"
+            self.position = point
+            print("\nRobot is now at position: ", self.position)
+            self.publish_status()
+
+    def publish_status(self):
+        data_send = {
+            "state": self.state,
+            "position": self.position,
+            "assignedPackage": self.assigned_package
+        }
+
+        print("\n", data_send)
+
+        client = mqtt.Client()
+        client.connect(self.broker_name, 1883)
+        client.loop_start()
+        time.sleep(0.5)
         # Publish the JSON file to the broker on a specific topic
-        client.publish("warehouse/robot/status", json_data)
+        client.publish("warehouse/robot/status", json.dumps(data_send))
+        client.loop_stop()
 
-    # Set the state to "finished", once done
-    state = "finished"
+    # Callback function for when the client receives a CONNACK response from the server.
 
-    data_send["robot_state"] = state
-    json_data = json.dumps(data_send)
-    # Publish the JSON file to the broker on a specific topic
-    client.publish("warehouse/robot/status", json_data)
+    def on_connect(self, client, userdata, flags, rc):
+        print("\nConnected with result code " + str(rc))
 
+    def start(self):
+        self.client = mqtt.Client()
+        # Assign the callback functions
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
 
-# MQTT client setup
-client = mqtt.Client()
-client.on_message = on_message
+        # Connect to the MQTT broker
+        self.client.connect(self.broker_name, 1883)
 
-# Connect to the MQTT broker
-client.connect("MQTT_broker", 1883)
+        # Publish the initial status of the robot
+        self.publish_status()
 
-# Subscribe to the topic to receive JSON file
-client.subscribe("warehouse/robot/planned_path")
-
-'''
-
-This code creates an MQTT client that subscribes to the topic "robot/path" to receive the planned path as an array of tuples. 
-When a message is received, the planned path is extracted and iterated over to move the robot along the path. 
-The robot's current position and state are updated and published to the MQTT broker in real time. 
-The function move_robot simulates the movement of the robot by printing a message.
-
-'''
+        # Subscribe to the topic to receive planned path
+        self.client.subscribe("warehouse/robot/planned_path")
+        self.client.loop_start()
+        # Check cpntinuously if path has been changed
+        self.path_changed()
+        self.client.loop_stop()
 
 
-
-client.loop_forever()
+if __name__ == "__main__":
+    robot = Robot(broker_name="localhost")
+    robot.start()
