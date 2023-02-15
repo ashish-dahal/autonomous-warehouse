@@ -8,6 +8,46 @@ services:
       - 8080:8080
     depends_on:
       - mqtt_broker
+      - knowledge
+    networks:
+      - warehouse
+  knowledge:
+    build: ./knowledge
+    container_name: knowledge
+    ports:
+      - 8081:8081
+    depends_on:
+      - mqtt_broker
+    networks:
+      - warehouse
+  monitor:
+    build: ./monitor
+    container_name: monitor
+    ports:
+      - 8082:8082
+    depends_on:
+      - mqtt_broker
+      - knowledge
+    networks:
+      - warehouse
+  analyzer:
+    build: ./analyzer
+    container_name: analyzer
+    ports:
+      - 8083:8083
+    depends_on:
+      - mqtt_broker
+      - knowledge
+    networks:
+      - warehouse
+  executor:
+    build: ./executor
+    container_name: executor
+    ports:
+      - 8084:8084
+    depends_on:
+      - mqtt_broker
+      - knowledge
     networks:
       - warehouse
   mqtt_broker:

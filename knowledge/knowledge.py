@@ -1,6 +1,7 @@
 from flask import Flask, request
 from pymongo import MongoClient
 import json
+import logging
 
 # connecting to MongoDB
 client = MongoClient(
@@ -21,52 +22,59 @@ print("Knowledge is running...")
 @app.route('/map_info', methods=['GET', 'POST'])
 def map_info():
     if request.method == 'POST':  # insert map_info document
-        map_info = request.get_json()
+        map_info = json.loads(request.data)
         collection_map_info.insert_one({"map_info": map_info}).inserted_id
+        print("Map info inserted:", map_info)
         # return status 200
         return "success"
     else:
         # fetch last map_info document
         last_map_document = list(
             collection_map_info.find().sort("_id", -1).limit(1))[0]['map_info']
-        print(last_map_document)
+        print("Get map info:", last_map_document)
         return json.dumps(last_map_document)
 
 
 @app.route('/package_info', methods=['GET', 'POST'])
 def package_info():
     if request.method == 'POST':  # insert package_info document
-        package_info = request.get_json()
+        package_info = json.loads(request.data)
         collection_package_info.insert_one({"id": package_info['id'], "source":  package_info['source'],
                                             "destination": package_info['destination']}).inserted_id
+        print("Package info inserted:", package_info)
     else:  # fetch first package_info document (FIFO)
         first_package_document = list(
             collection_package_info.find().sort({"_id": 1}).limit(1))
         # collection_package_info.remove(first_package_document)
+        print("Get package info:", first_package_document)
         return json.dumps(first_package_document)
 
 
 @app.route('/robot_info', methods=['GET', 'POST'])
 def robot_info():
     if request.method == 'POST':  # insert robot_info document
-        robot_info = request.get_json()
+        robot_info = json.loads(request.data)
         collection_robot_info.insert_one(
             {"state": robot_info['state'], "position":  robot_info['position']})
+        print("Robot info inserted:", robot_info)
     else:  # fetch last robot_info document
         last_robot_document = json.loads(
             collection_robot_info.find().sort("_id", -1).limit(1))
+        print("Get robot info:", last_robot_document)
         return json.dumps(last_robot_document)
 
 
 @app.route('/planned_path', methods=['GET', 'POST'])
 def planned_path():
     if request.method == 'POST':  # insert planned_path document
-        planned_path = request.get_json()
+        planned_path = json.loads(request.data)
         collection_planned_path.insert_one(
             {"package_id": planned_path['package_id'], "planned_path": planned_path['planned_path']})
+        print("Planned path inserted:", planned_path)
     else:  # fetch last planned_path document
         last_path_document = json.loads(
             collection_planned_path.find().sort("_id", -1).limit(1))
+        print("Get planned path:", last_path_document)
         return json.dumps(last_path_document)
 
 

@@ -3,7 +3,7 @@ import requests
 import json
 import paho.mqtt.client as mqtt
 
-HOST = "localhost"
+HOST = "http://127.0.0.1:5000"
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
 MQTT_TOPICS = [("warehouse/map", 0), ("warehouse/robot/status",
@@ -23,7 +23,7 @@ class Monitor:
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, message):
-        msg = message.payload.decode("utf-8")
+        msg = json.loads(message.payload.decode("utf-8"))
         if message.topic == "warehouse/map":
             self.insert_map_info(msg)
         elif message.topic == "warehouse/robot/status":
@@ -39,26 +39,28 @@ class Monitor:
     # Send command to analyzer to start analyzing
     def command_analyzer(self):
         self.client.publish("warehouse/monitor/command", "start")
+        print("Commanded Analyzer to start analyzing")
 
     # Insert map info into knowledge
 
     def insert_map_info(self, map_info):
-        requests.post(url=f"{HOST}/map_info", data=map_info)
+        requests.post(url=f"{HOST}/map_info", data=json.dumps(map_info))
         print(map_info)
 
     # Insert robot info into knowledge
     def insert_robot_info(self, robot_info):
-        requests.post(url=f"{HOST}/robot_info", data=robot_info)
+        requests.post(url=f"{HOST}/robot_info", data=json.dumps(robot_info))
         print(robot_info)
 
     # Insert package info into knowledge
     def insert_package_info(self, package_info):
-        requests.post(url=f"{HOST}/package_info", data=package_info)
+        requests.post(url=f"{HOST}/package_info",
+                      data=json.dumps(package_info))
         print(package_info)
 
     # Reset knowledge
     def reset_knowledge(self):
-        # requests.post(url="knowledge/reset")
+        requests.post(url=f"{HOST}/reset")
         print("Reset knowledge")
 
     # Start the monitor
