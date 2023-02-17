@@ -9,6 +9,8 @@
 1. Obstacles can be inserted/removed by clicking and dragging on the map
 2. Packages can be added with `Add package` button
 3. Refresh the page to restart
+4. The robot starts operating only after adding packages.
+5. The green box represents the destination of the current package
 
 
 ### Known bugs and limitations:
