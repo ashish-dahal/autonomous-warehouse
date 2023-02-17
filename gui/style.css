@@ -35,6 +35,11 @@ body {
     background-size: 40px;
 }
 
+.robot-delivering {
+    background: url("./artifacts/robot_delivering.png") !important;
+
+}
+
 .package {
     width: 40px;
     position: absolute;

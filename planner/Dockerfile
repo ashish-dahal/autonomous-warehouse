@@ -5,12 +5,7 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# add mosquitto client
-RUN apk add --no-cache mosquitto-clients
-
 COPY . .
-
-EXPOSE 8080
 
 CMD [ "python", "-u", "./planner.py" ]
 

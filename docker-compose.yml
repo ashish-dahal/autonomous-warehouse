@@ -1,9 +1,11 @@
 version: '3.7'
 
 services:
-  planner:
-    build: ./planner
-    container_name: planner
+
+  gui:
+    build: ./gui
+    container_name: gui
+    restart: always
     ports:
       - 8080:8080
     depends_on:
@@ -11,18 +13,30 @@ services:
       - knowledge
     networks:
       - warehouse
-  knowledge:
-    build: ./knowledge
-    container_name: knowledge
+  planner:
+    build: ./planner
+    container_name: planner
+    restart: always
     ports:
       - 8081:8081
     depends_on:
       - mqtt_broker
+      - knowledge
+      - robot
+    networks:
+      - warehouse
+  knowledge:
+    build: ./knowledge
+    container_name: knowledge
+    restart: always
+    ports:
+      - 5000:5000
     networks:
       - warehouse
   monitor:
     build: ./monitor
     container_name: monitor
+    restart: always
     ports:
       - 8082:8082
     depends_on:
@@ -33,6 +47,7 @@ services:
   analyzer:
     build: ./analyzer
     container_name: analyzer
+    restart: always
     ports:
       - 8083:8083
     depends_on:
@@ -43,11 +58,24 @@ services:
   executor:
     build: ./executor
     container_name: executor
+    restart: always
     ports:
       - 8084:8084
     depends_on:
       - mqtt_broker
       - knowledge
+    networks:
+      - warehouse
+  robot:
+    build: ./robot
+    container_name: robot
+    restart: always
+    ports:
+      - 8085:8085
+    depends_on:
+      - mqtt_broker
+      - knowledge
+      - monitor
     networks:
       - warehouse
   mqtt_broker:

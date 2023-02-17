@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "python", "-u", "./knowledge-local.py" ]
+CMD [ "python", "-u", "./analyzer.py" ]
 
 # entrypoint tail
 # ENTRYPOINT [ "tail", "-f", "/dev/null" ]

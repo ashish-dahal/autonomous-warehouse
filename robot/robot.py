@@ -4,7 +4,7 @@ import time
 
 
 class Robot:
-    def __init__(self, broker_name):
+    def __init__(self, broker_name, broker_port):
 
         # initial state of the robot - idle
         self.state = "IDLE"
@@ -19,6 +19,7 @@ class Robot:
 
         # MQTT broker name
         self.broker_name = broker_name
+        self.broker_port = broker_port
 
     # Callback function for when a message is received on the subscribed topic.
     def on_message(self, client, userdata, msg):
@@ -32,7 +33,7 @@ class Robot:
             Dictionary format of data as follows...
 
             data = {
-                "package_id": "value1",
+                "package_id": "value",
                 "planned_path": [(x1, y1), (x2, y2), (x3, y3), ...]
                     }
 
@@ -47,6 +48,15 @@ class Robot:
                 self.planned_path = []
             else:
                 self.planned_path = path_data["planned_path"]
+
+        if msg.topic == "warehouse/reset":
+            self.state = "IDLE"
+            self.position = [10, 10]
+            self.assigned_package = None
+            self.planned_path = []
+            self.prev_path = []
+            time.sleep(1)
+            self.publish_status()
 
     # function to check if path has been changed
     def path_changed(self):
@@ -78,7 +88,7 @@ class Robot:
         print("\n", data_send)
 
         client = mqtt.Client()
-        client.connect(self.broker_name, 1883)
+        client.connect(self.broker_name, self.broker_port)
         client.loop_start()
         time.sleep(0.5)
         # Publish the JSON file to the broker on a specific topic
@@ -104,12 +114,13 @@ class Robot:
 
         # Subscribe to the topic to receive planned path
         self.client.subscribe("warehouse/robot/planned_path")
+        self.client.subscribe("warehouse/reset")
         self.client.loop_start()
-        # Check cpntinuously if path has been changed
+        # Check continuously if path has been changed
         self.path_changed()
         self.client.loop_stop()
 
 
 if __name__ == "__main__":
-    robot = Robot(broker_name="localhost")
+    robot = Robot(broker_name="mqtt_broker", broker_port=1883)
     robot.start()

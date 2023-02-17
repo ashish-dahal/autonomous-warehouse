@@ -1,10 +1,13 @@
 from heapq import heappush, heappop
 from math import sqrt
 import paho.mqtt.client as mqtt
-import time
-import random
 import requests
 import json
+
+TOPIC = "warehouse/analyzer/command"
+MQTT_BROKER = "mqtt_broker"
+MQTT_PORT = 1883
+HOST = "http://knowledge:5000"
 
 
 class Planner:
@@ -16,7 +19,7 @@ class Planner:
         self.client = mqtt.Client()
 
         # Connect to the mqtt broker
-        self. client.connect(broker_name, broker_port)
+        self.client.connect(broker_name, broker_port)
 
     def a_star(self, map, source, destination):
         """ A* algorithm to find the shortest path from the source to the destination.
@@ -115,7 +118,10 @@ class Planner:
         Returns:
             list: The path.
         """
-        robot_to_source = self.a_star(map, robot_position, source)
+        if robot_position == source:
+            robot_to_source = [source]
+        else:
+            robot_to_source = self.a_star(map, robot_position, source)
         source_to_destination = self.a_star(map, source, destination)
 
         if robot_to_source is not None and source_to_destination is not None:
@@ -126,66 +132,72 @@ class Planner:
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
-        client.subscribe("analyzer/command")
+        client.subscribe(TOPIC)
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, msg):
-        print(msg.topic+": \n"+str(msg.payload))
-        if msg.topic == "analyzer/command":
+        print("Message received: " + msg.topic + " " + str(msg.payload))
+        if msg.topic == TOPIC:
             if msg.payload == b"start":
                 # get info from knowledge
-                map, robot_position, source, destination = self.query_knowledge()
 
-                # get path
-                path = self.get_path(map, robot_position, source, destination)
+                if self.query_knowledge():
+                    map_info, robot_info, package_info = self.query_knowledge()
 
-                print("Update map with path (Indicated by '2'):")
-                if path is not None:
-                    # print the line on path in map
-                    for p in path:
-                        map[p[0]][p[1]] = 2
+                    # get path
+                    path = self.get_path(
+                        map_info, robot_info['position'], package_info['source'], package_info['destination'])
 
-                    for m in map:
-                        print(m)
+                    print("Planned path: ", path)
+                    print("Update map with path (Indicated by '2'):")
+                    if path is not None:
+                        # insert path to knowledge in json format
+                        self.insert_knowledge(json.dumps(
+                            {"package_id": package_info['id'], "planned_path": path}))
+                        # publish trigger to executor
+                        self.client.publish(
+                            "warehouse/planner/command", "start")
 
-                    print("path: ", path)
-                else:
-                    print("Path doesn't exist")
+                        # print the line on path in map
+                        for p in path:
+                            map_info[p[0]][p[1]] = 2
 
-                # insert path to knowledge in json format
-                self.insert_knowledge(json.dumps(path))
-
-                # publish trigger to executor
-                self.client.publish("planner/command", "start")
+                        for m in map_info:
+                            print(m)
+                    else:
+                        print("Path doesn't exist")
 
     def query_knowledge(self):
-        # get map from rest api
-        map = requests.get("knowledge/map").json()
-
         # get package info from rest api
-        package_info = json.loads(requests.get(
-            "knowledge/package_info").json())
+        response = requests.get(
+            f"{HOST}/package_info").json()
+
+        # check if there are no packages
+        if response is None:
+            print("No packages inserted.")
+            return False
+        else:
+            package_info = response
+
+        # get map from rest api
+        map = list(requests.get(f"{HOST}/map_info").json())
 
         # get robot info from rest api
-        robot_info = json.loads(requests.get("knowledge/robot_info").json())
-
-        source = package_info['source']
-        destination = package_info['destination']
-        robot_position = robot_info['position']
+        robot_info = requests.get(f"{HOST}/robot_info").json()
 
         print("\nMap:")
         for m in map:
             print(m)
 
-        print("Robot:", robot_position)
-        print("Source: ", source)
-        print("Destination: ", destination)
+        print("Robot:", robot_info['position'])
+        print("Source: ", package_info['source'])
+        print("Destination: ", package_info['destination'])
         print("-"*10)
-        return map, robot_position, source, destination
+        return map, robot_info, package_info
 
-    def insert_knowledge(self, path):
+    def insert_knowledge(self, data):
         # insert path to rest api
-        requests.post("knowledge/path", json=path)
+        requests.post(f"{HOST}/planned_path", json=data)
 
     def start(self):
         """Starts the planner.
@@ -201,5 +213,5 @@ class Planner:
 
 if __name__ == "__main__":
 
-    planner = Planner("localhost", 1883)
+    planner = Planner(MQTT_BROKER, MQTT_PORT)
     planner.start()

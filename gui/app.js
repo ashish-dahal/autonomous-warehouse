@@ -278,7 +278,8 @@ class Packages {
     pickedUp(grid, id) {
         // remove package from grid
         let packageImg = document.getElementById(id);
-        packageImg.remove();
+        packageImg.classList.remove('package');
+
         // remove package from packages
         this.removePackage(grid, id);
 
@@ -378,9 +379,7 @@ class Robot {
         // update assigned package
         this.assignedPackage = status.assignedPackage;
 
-        if (this.state === "NO_PATH") {
-            alert("No path found for package " + this.assignedPackage + "!");
-        }
+        this.handleStateChange();
 
         // update the map based on current package
         packages.setCurrentPackage(this.assignedPackage);
@@ -388,7 +387,21 @@ class Robot {
         // update robot position
         this.robot = document.querySelector(`[data-x="${this.position[0]}"][data-y="${this.position[1]}"]`);
         this.displayRobot();
-        grid.publish();
+        // grid.publish();
+    }
+
+    handleStateChange() {
+        if (this.state === "NO_PATH") {
+            alert("No path found for package " + this.assignedPackage + "!");
+        }
+        if (this.state === "DELIVERED") {
+            // remove destination class of current package
+            let pack = packages.getCurrentPackage();
+            if (typeof pack !== 'undefined') {
+                let current_cell = document.querySelector(`[data-x="${pack.destination[0]}"][data-y="${pack.destination[1]}"]`);
+                current_cell.classList.remove('destination');
+            }
+        }
     }
 
     reset() {
@@ -404,9 +417,10 @@ class Robot {
         let current_package = packages.getCurrentPackage();
         if (typeof current_package !== 'undefined') {
             if (current_package.source[0] === this.position[0] && current_package.source[1] === this.position[1]) {
-                this.robot.style.background = 'url("./artifacts/robot_delivering.png")';
-            } else if (current_package.destination[0] === this.position[0] && current_package.destination[1] === this.position[1]) {
-                this.robot.style.background = 'url("./artifacts/robot_fetching.png")';
+                this.robot.classList.add('robot-delivering');
+                // remove the package image with id from the grid cell
+                let packageImg = document.getElementById(current_package.id);
+                packageImg.remove();
             }
         }
         else {
@@ -418,7 +432,6 @@ class Robot {
             // prev_cell.removeChild(prev_cell.firstChild);
             prev_cell.classList.remove('robot');
         }
-
         // add robot
         this.robot = document.querySelector(`div[data-x="${this.position[0]}"][data-y="${this.position[1]}"]`);
         this.robot.classList.add('robot');
@@ -440,6 +453,8 @@ client.on('connect', () => {
 client.on('message', (topic, message) => {
     console.log(topic, message.toString());
 });
+
+client.publish('warehouse/reset', 'reset');
 
 // Create a new Grid object
 const grid = new Grid(23, 37, client);

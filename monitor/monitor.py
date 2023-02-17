@@ -1,10 +1,8 @@
-import time
 import requests
-import json
 import paho.mqtt.client as mqtt
 
-HOST = "http://127.0.0.1:5000"
-MQTT_BROKER = "localhost"
+HOST = "http://knowledge:5000"
+MQTT_BROKER = "mqtt_broker"
 MQTT_PORT = 1883
 MQTT_TOPICS = [("warehouse/map", 0), ("warehouse/robot/status",
                                       0), ("warehouse/package/insert", 0), ("warehouse/reset", 0)]
@@ -23,16 +21,19 @@ class Monitor:
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client, userdata, message):
-        msg = json.loads(message.payload.decode("utf-8"))
+        msg = message.payload
         if message.topic == "warehouse/map":
             self.insert_map_info(msg)
+            print("Map info inserted")
         elif message.topic == "warehouse/robot/status":
             self.insert_robot_info(msg)
+            print("Robot info inserted")
         elif message.topic == "warehouse/package/insert":
             self.insert_package_info(msg)
+            print("Package info inserted")
         elif message.topic == "warehouse/reset":
-            if msg == "reset":
-                self.reset_knowledge()
+            self.reset_knowledge()
+            print("Knowledge reset")
 
         self.command_analyzer()
 
@@ -44,26 +45,25 @@ class Monitor:
     # Insert map info into knowledge
 
     def insert_map_info(self, map_info):
-        requests.post(url=f"{HOST}/map_info", data=json.dumps(map_info))
+        requests.post(url=f"{HOST}/map_info", data=map_info)
         print(map_info)
 
     # Insert robot info into knowledge
     def insert_robot_info(self, robot_info):
-        requests.post(url=f"{HOST}/robot_info", data=json.dumps(robot_info))
+        requests.post(url=f"{HOST}/robot_info", data=robot_info)
         print(robot_info)
 
     # Insert package info into knowledge
     def insert_package_info(self, package_info):
         requests.post(url=f"{HOST}/package_info",
-                      data=json.dumps(package_info))
+                      data=package_info)
         print(package_info)
 
     # Reset knowledge
     def reset_knowledge(self):
         requests.post(url=f"{HOST}/reset")
-        print("Reset knowledge")
-
     # Start the monitor
+
     def start(self):
         self.client.connect(MQTT_BROKER, MQTT_PORT)
         self.client.on_connect = self.on_connect
