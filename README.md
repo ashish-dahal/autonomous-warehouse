@@ -5,11 +5,17 @@
 1. From the browser, go to `localhost:8080`
 
 
+### Instructions for usage:
+1. Obstacles can be inserted/removed by clicking and dragging on the map
+2. Packages can be added with `Add package` button
+3. Refresh the page to restart
+
+
 ### Known bugs and limitations:
 
-The app satisfies the requirements defined above, however there are some known bugs and limitations as follows that is needed to be kept in mind while running the application:
+The app satisfies the defined requirements, however there are some known bugs and limitations as follows that is needed to be kept in mind while running the application:
 
 1. The obstacles can only be inserted when the robot has not picked up the package.
-1. Additional packages cannot be inserted while the robot has not completed delivering the packages.
-1. Using the reset button causes robot to replicate, use the browser refresh button instead.
-1. Docker container needs to be re-run if any other runtime bugs appear
+2. Additional packages cannot be inserted while the robot has not completed delivering the packages.
+3. Using the reset button causes robot to replicate, use the browser refresh button instead.
+4. Docker container needs to be re-run if any other runtime bugs appear
