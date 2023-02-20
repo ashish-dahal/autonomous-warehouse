@@ -1,10 +1,17 @@
 import paho.mqtt.client as mqtt
 import json
 import time
+import configparser
+
+config = configparser.ConfigParser()
+config.read('warehouse.conf')
+
+MQTT_BROKER = config.get("mqtt_broker", "broker_name")
+MQTT_PORT = config.getint("mqtt_broker", "port")
 
 
 class Robot:
-    def __init__(self, broker_name, broker_port):
+    def __init__(self):
 
         # initial state of the robot - idle
         self.state = "IDLE"
@@ -16,10 +23,6 @@ class Robot:
         self.planned_path = []
 
         self.prev_path = []
-
-        # MQTT broker name
-        self.broker_name = broker_name
-        self.broker_port = broker_port
 
     # Callback function for when a message is received on the subscribed topic.
     def on_message(self, client, userdata, msg):
@@ -88,7 +91,7 @@ class Robot:
         print("\n", data_send)
 
         client = mqtt.Client()
-        client.connect(self.broker_name, self.broker_port)
+        client.connect(MQTT_BROKER, MQTT_PORT)
         client.loop_start()
         time.sleep(0.5)
         # Publish the JSON file to the broker on a specific topic
@@ -107,7 +110,7 @@ class Robot:
         self.client.on_message = self.on_message
 
         # Connect to the MQTT broker
-        self.client.connect(self.broker_name, 1883)
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
 
         # Publish the initial status of the robot
         self.publish_status()
@@ -122,5 +125,5 @@ class Robot:
 
 
 if __name__ == "__main__":
-    robot = Robot(broker_name="mqtt_broker", broker_port=1883)
+    robot = Robot()
     robot.start()

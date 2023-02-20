@@ -11,6 +11,8 @@ services:
     depends_on:
       - mqtt_broker
       - knowledge
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   planner:
@@ -23,6 +25,8 @@ services:
       - mqtt_broker
       - knowledge
       - robot
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   knowledge:
@@ -42,6 +46,8 @@ services:
     depends_on:
       - mqtt_broker
       - knowledge
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   analyzer:
@@ -53,6 +59,8 @@ services:
     depends_on:
       - mqtt_broker
       - knowledge
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   executor:
@@ -64,6 +72,8 @@ services:
     depends_on:
       - mqtt_broker
       - knowledge
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   robot:
@@ -76,6 +86,8 @@ services:
       - mqtt_broker
       - knowledge
       - monitor
+    volumes:
+      - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
       - warehouse
   mqtt_broker:

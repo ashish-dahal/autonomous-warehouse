@@ -1,15 +1,20 @@
 import paho.mqtt.client as mqtt
 import requests
+import configparser
+
+config = configparser.ConfigParser()
+config.read('warehouse.conf')
+
+MQTT_BROKER = config.get("mqtt_broker", "broker_name")
+MQTT_PORT = config.getint("mqtt_broker", "port")
+HOST = config.get("knowledge", "host")
 
 
 class Executor:
     def __init__(self):
-        self.MQTT_BROKER = "mqtt_broker"
-        self.MQTT_PORT = 1883
         self.MQTT_TOPICS = [("warehouse/planner/command", 0)]
-        self.HOST = "http://knowledge:5000"
         self.client = mqtt.Client()
-        self.client.connect(self.MQTT_BROKER, self.MQTT_PORT)
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -26,7 +31,7 @@ class Executor:
                 self.execute()
 
     def execute(self):
-        planned_path = requests.get(f'{self.HOST}/planned_path').json()
+        planned_path = requests.get(f'{HOST}/planned_path').json()
         print("Publishing planned path: ", planned_path)
         self.client.publish('warehouse/robot/planned_path', planned_path)
 

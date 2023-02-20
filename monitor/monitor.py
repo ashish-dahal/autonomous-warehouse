@@ -1,9 +1,13 @@
 import requests
 import paho.mqtt.client as mqtt
+import configparser
 
-HOST = "http://knowledge:5000"
-MQTT_BROKER = "mqtt_broker"
-MQTT_PORT = 1883
+config = configparser.ConfigParser()
+config.read('warehouse.conf')
+
+MQTT_BROKER = config.get("mqtt_broker", "broker_name")
+MQTT_PORT = config.getint("mqtt_broker", "port")
+HOST = config.get("knowledge", "host")
 MQTT_TOPICS = [("warehouse/map", 0), ("warehouse/robot/status",
                                       0), ("warehouse/package/insert", 0), ("warehouse/reset", 0)]
 

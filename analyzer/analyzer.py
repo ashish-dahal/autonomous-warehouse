@@ -1,10 +1,15 @@
 import paho.mqtt.client as mqtt
 import requests
 
+import configparser
+
+config = configparser.ConfigParser()
+config.read('warehouse.conf')
+
+MQTT_BROKER = config.get("mqtt_broker", "broker_name")
+MQTT_PORT = config.getint("mqtt_broker", "port")
+HOST = config.get("knowledge", "host")
 TOPIC = "warehouse/monitor/command"
-MQTT_BROKER = "mqtt_broker"
-MQTT_PORT = 1883
-HOST = "http://knowledge:5000"
 
 
 class Analyzer:
