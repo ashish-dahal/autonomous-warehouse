@@ -1,6 +1,6 @@
 ﻿# Autonomous Warehouse Project
 
-![](assets/Aspose.Words.78168957-b430-452c-a698-fbdd48254179.003.png)
+![](assets/screenshot.png)
 
 [Project GitHub repository](https://github.com/ashish-dahal/autonomous-warehouse)
 
