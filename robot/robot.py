@@ -103,6 +103,12 @@ class Robot:
     def on_connect(self, client, userdata, flags, rc):
         print("\nConnected with result code " + str(rc))
 
+    def on_disconnect(self, client, userdata, rc):
+        if rc != 0:
+            print("Unexpected disconnection.")
+        elif rc == 0:
+            print("Disconnected successfully.")
+
     def start(self):
         self.client = mqtt.Client()
         # Assign the callback functions
