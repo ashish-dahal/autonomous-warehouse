@@ -72,6 +72,7 @@ services:
     depends_on:
       - mqtt_broker
       - knowledge
+      - planner
     volumes:
       - ./warehouse.conf:/usr/src/app/warehouse.conf
     networks:
@@ -98,7 +99,7 @@ services:
     restart: always
     ports:
       - 1883:1883
-      - 8000:8000
+      - 8001:8001
     networks:
       - warehouse
 
