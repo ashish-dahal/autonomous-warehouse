@@ -148,6 +148,8 @@ function resetGrid(grid, robot, packages) {
 
     // publish reset message to the mqtt broker
     client.publish('warehouse/reset', 'reset');
+
+    console.log('Grid reset');
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,6 +250,7 @@ class Packages {
         this.publish(newPackage, 'warehouse/package/insert');
         this.displayPackage(newPackage)
         grid.publish()
+        console.log('Package added');
     }
 
     removePackage(grid, id) {
@@ -255,6 +258,7 @@ class Packages {
         let removedPackage = this.packages.find(pack => pack.id === id);
         this.packages = this.packages.filter(pack => pack.id !== id);
         this.publish(removedPackage.id, 'warehouse/package/remove');
+        console.log('Package removed');
     }
 
     publish(id, topic) {
@@ -282,6 +286,7 @@ class Packages {
 
         // remove package from packages
         this.removePackage(grid, id);
+        console.log('Package picked up');
 
     }
 
@@ -349,7 +354,7 @@ class Robot {
 
             if (topic === 'warehouse/robot/status') {
                 let status = JSON.parse(message);
-                console.log(status);
+                console.log('Robot Status:', status);
                 this.updateState(status);
             }
         });
@@ -444,11 +449,19 @@ class Robot {
 //APP STARTS HERE
 
 // Connect to mqtt broker
-const client = mqtt.connect('ws://localhost:8000/mqtt');
+const client = mqtt.connect('ws://localhost:8001/mqtt');
 
 client.on('connect', () => {
     console.log('Connected to MQTT Broker');
+    // print client id
+    console.log('Client ID:', client.options.clientId);
 });
+
+// check client status
+client.on('error', (error) => {
+    console.log('MQTT Error:', error);
+});
+
 
 client.on('message', (topic, message) => {
     console.log(topic, message.toString());
